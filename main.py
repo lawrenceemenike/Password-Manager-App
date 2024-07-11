@@ -1,54 +1,81 @@
 from tkinter import *
 from tkinter import messagebox
-import random
-import string
+from random import choice, randint, shuffle
 import pyperclip
-import os
+import json
 
 # ---------------------------- PASSWORD GENERATOR ------------------------------- #
+
+#Password Generator Project
 def generate_password():
-    letters = string.ascii_letters
-    numbers  = string.digits
-    symbols = string.punctuation
-    
-    password_letters = [random.choice(letters) for _ in range(random.randint(8, 10))]
-    password_symbols = [random.choice(symbols) for _ in range(random.randint(2, 4))]
-    password_numbers = [random.choice(numbers) for _ in range(random.randint(2, 4))]  
-    
+    letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
+    numbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+    symbols = ['!', '#', '$', '%', '&', '(', ')', '*', '+']
+
+    password_letters = [choice(letters) for _ in range(randint(8, 10))]
+    password_symbols = [choice(symbols) for _ in range(randint(2, 4))]
+    password_numbers = [choice(numbers) for _ in range(randint(2, 4))]
+
     password_list = password_letters + password_symbols + password_numbers
-    random.shuffle(password_list)
-    
+    shuffle(password_list)
+
     password = "".join(password_list)
-    password_entry.delete(0, END)
     password_entry.insert(0, password)
     pyperclip.copy(password)
+    
+# ----------------------------FIND PASSWORD---------------------------------#
+def find_password():
+    website = website_entry.get()
+    try:
+        with open("data.json") as data_file:
+            data = json.load(data_file)
+    except FileNotFoundError:
+        messagebox.showinfo(title="Error", message="No Data FIle Found.")
+    else:
+        
+        if website in data:
+            email = data[website]["email"]
+            password = data[website]["password"]
+            messagebox.showinfo(title=website, message=f"Email: {email}\nPassowrd: {password}")
+        else:
+            messagebox.showinfo(title="Error", message=f"No details for {website} exists")
 
 # ---------------------------- SAVE PASSWORD ------------------------------- #
 def save():
+
     website = website_entry.get()
     email = email_entry.get()
     password = password_entry.get()
-    
+    new_data = {
+        website: {
+            "email": email,
+            "password": password,
+        }
+    }
+
     if len(website) == 0 or len(password) == 0:
-        messagebox.showinfo(title="Oops", message="Please make you havent left any field empty.")
+        messagebox.showinfo(title="Oops", message="Please make sure you haven't left any fields empty.")
     else:
-        is_ok = messagebox.askokcancel(title=website, message=f"These are the details entered: \nEmail: {email} "
-                                       f"\nPassword: {password} \nIs is ok to save?")
-        if is_ok:
-            filename = "passwords.txt"
-            file_exists = os.path.isfile(filename)
-            
-            with open(filename, "a") as data_file:
-                if not file_exists:
-                    data_file.write("Website | Email/Username | Password\n")
-                    data_file.write("-" * 50 + "\n")
-                data_file.write(f"{website} | {email} | {password}\n")
-                
+        try:
+            with open("data.json", "r") as data_file:
+                # Reading the old data
+                data = json.load(data_file)
+        except FileNotFoundError:
+            with open("data.json","w") as data_file:
+                json.dump(new_data, data_file, indent=4)
+        else:        
+            # updating old daata with new data
+            data.update(new_data)
+            with open("data.json", "w") as data_file:
+                # Saving the updated data
+                json.dump(data, data_file, indent=4)
+        finally:                  
             website_entry.delete(0, END)
             password_entry.delete(0, END)
-            messagebox.showinfo(title="Success", message="Password saved successfully!")
+
 
 # ---------------------------- UI SETUP ------------------------------- #
+
 window = Tk()
 window.title("Password Manager")
 window.config(padx=50, pady=50)
@@ -66,20 +93,22 @@ email_label.grid(row=2, column=0)
 password_label = Label(text="Password:")
 password_label.grid(row=3, column=0)
 
-# Entries
-website_entry = Entry(width=35)
-website_entry.grid(row=1, column=1, columnspan=2)
+#Entries
+website_entry = Entry(width=27)
+website_entry.grid(row=1, column=1, columnspan=1)
 website_entry.focus()
-email_entry = Entry(width=35)
-email_entry.grid(row=2, column=1, columnspan=2)
-email_entry.insert(0, "law.emike@gmail.com")
-password_entry = Entry(width=21)
+email_entry = Entry(width=27)
+email_entry.grid(row=2, column=1, columnspan=1)
+email_entry.insert(0, "angela@gmail.com")
+password_entry = Entry(width=27)
 password_entry.grid(row=3, column=1)
 
 # Buttons
+search_button = Button(text="Search", width=13, command=find_password)
+search_button.grid(row=1, column=2)
 generate_password_button = Button(text="Generate Password", command=generate_password)
 generate_password_button.grid(row=3, column=2)
-add_button = Button(text="Add", width=36, command=save)
+add_button = Button(text="Add", width=42, command=save)
 add_button.grid(row=4, column=1, columnspan=2)
 
 window.mainloop()
